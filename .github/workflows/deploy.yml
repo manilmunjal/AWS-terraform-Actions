@@ -1,3 +1,63 @@
+# name: Terraform CI/CD Pipeline for AWS
+# run-name: ${{ github.actor }} triggered the pipeline
+
+# on: 
+#   push:
+#     branches:
+#       - 'main'
+
+# env:
+#   AWS_REGION: us-east-1
+
+# jobs:
+#   build-infra:
+#     name: Terraform CI/CD
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout Code
+#         uses: actions/checkout@v3
+
+#       - name: Set AWS Credentials
+#         env:
+#           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
+#           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#         run: |
+#           echo "AWS credentials set."
+
+#       - name: Set Up Terraform
+#         uses: hashicorp/setup-terraform@v2
+#         with:
+#           terraform_version: 1.5.7
+
+#       - name: Terraform Init
+#         id: init
+#         run: terraform init
+#         working-directory: ./terraform-vpc
+
+#       - name: Terraform Validate
+#         id: validate
+#         run: terraform validate
+#         working-directory: ./terraform-vpc
+
+#       - name: Terraform Plan
+#         id: plan
+#         run: terraform plan
+#         working-directory: ./terraform-vpc
+
+#       - name: Terraform Apply
+#         id: apply
+#         run: terraform apply --auto-approve
+#         working-directory: ./terraform-vpc
+
+#       - name: Wait for a few minutes before destroy (Optional)
+#         run: sleep 120
+
+#       - name: Terraform Destroy
+#         id: destroy
+#         run: terraform destroy --auto-approve
+#         working-directory: ./terraform-vpc
+
 name: Terraform CI/CD Pipeline for AWS
 run-name: ${{ github.actor }} triggered the pipeline
 
@@ -18,21 +78,28 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Set AWS Credentials
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        run: |
-          echo "AWS credentials set."
+      - name: Set Up AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Set Up Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.5.7
 
-      - name: Terraform Init
-        id: init
-        run: terraform init
+      - name: Clean up old Terraform initialization
+        run: rm -rf .terraform
+
+      - name: Verify AWS CLI Authentication
+        run: aws sts get-caller-identity
+
+      - name: Terraform Init with Debug Logs
+        run: |
+          export TF_LOG=DEBUG
+          terraform init
         working-directory: ./terraform-vpc
 
       - name: Terraform Validate
@@ -57,3 +124,4 @@ jobs:
         id: destroy
         run: terraform destroy --auto-approve
         working-directory: ./terraform-vpc
+
