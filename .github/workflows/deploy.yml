@@ -57,7 +57,7 @@ jobs:
         run: terraform apply --auto-approve -lock=false
         working-directory: ./terraform-vpc
 
-      - name: Wait for a few minutes before destroy (Optional)
+      - name: Wait for a few minutes before destroy
         run: sleep 120
 
       - name: Terraform Destroy (with -lock=false)
